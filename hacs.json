@@ -1,8 +1,9 @@
 {
   "name": "Kamstrup 403",
   "homeassistant": "2025.8.0",
-  "content_in_root": true,
+  "content_in_root": false,
   "zip_release": true,
   "filename": "kamstrup_403.zip"
 }
+
 
