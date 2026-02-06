@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Kamstrup meter",
+        "description": "Voer de seriële poort in die op de meter is aangesloten",
+        "data": {
+          "port": "Seriële poort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met de opgegeven poort"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Scaninterval (seconden)",
+          "timeout": "Time-out voor serieel lezen (seconden)"
+        }
+      }
+    }
+  }
+}
