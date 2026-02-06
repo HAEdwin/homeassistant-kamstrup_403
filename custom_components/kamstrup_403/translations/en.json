@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Kamstrup meter",
+        "description": "Enter the serial port that is connected to your meter",
+        "data": {
+          "port": "Serial port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the specified serial port"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Scan interval (seconds)",
+          "timeout": "Serial read timeout (seconds)"
+        }
+      }
+    }
+  }
+}
