@@ -4,6 +4,7 @@ import logging
 from datetime import timedelta
 from typing import Any
 
+from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -49,6 +50,12 @@ class KamstrupCoordinator(DataUpdateCoordinator[dict[int, Any]]):
         failed = sum(1 for d in data.values() if d["value"] is None)
         if failed == len(self.registers):
             _LOGGER.error("No readings from meter - check IR connection")
+            persistent_notification.async_create(
+                self.hass,
+                "No readings from the Kamstrup meter. Please check the IR connection.",
+                title="Kamstrup 403 - Connection Failed",
+                notification_id=f"{DOMAIN}_ir_connection_failed",
+            )
         elif failed > 0:
             _LOGGER.debug("Update complete: %d/%d failed", failed, len(self.registers))
 
