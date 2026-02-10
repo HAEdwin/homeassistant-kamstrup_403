@@ -208,10 +208,6 @@ SENSORS: tuple[KamstrupSensorDescription, ...] = (
     ),
 )
 
-# All registers to poll
-ALL_REGISTERS = [s.register for s in SENSORS]
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -225,7 +221,7 @@ async def async_setup_entry(
         KamstrupSensor(coordinator, entry.entry_id, port, desc)
         for desc in SENSORS
     ]
-    # Add gas conversion sensor
+    # Add gas conversion sensor (depends on register 60)
     entities.append(KamstrupGasSensor(coordinator, entry.entry_id, port))
 
     async_add_entities(entities)
@@ -255,6 +251,16 @@ class KamstrupSensor(CoordinatorEntity[KamstrupCoordinator], SensorEntity):
             name="Kamstrup 403",
             model=MODEL,
         )
+
+    async def async_added_to_hass(self) -> None:
+        """Register this sensor's command when added to hass."""
+        await super().async_added_to_hass()
+        self.coordinator.register_command(self.entity_description.register)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Unregister this sensor's command when removed from hass."""
+        self.coordinator.unregister_command(self.entity_description.register)
+        await super().async_will_remove_from_hass()
 
     @property
     def _register_data(self) -> dict[str, Any] | None:
@@ -297,6 +303,10 @@ class KamstrupSensor(CoordinatorEntity[KamstrupCoordinator], SensorEntity):
         return data.get("unit") if data else None
 
 
+# Register ID for Heat Energy (used by gas sensor)
+HEAT_ENERGY_REGISTER = 60
+
+
 class KamstrupGasSensor(CoordinatorEntity[KamstrupCoordinator], SensorEntity):
     """Kamstrup gas conversion sensor (heat energy to gas m3)."""
 
@@ -320,11 +330,21 @@ class KamstrupGasSensor(CoordinatorEntity[KamstrupCoordinator], SensorEntity):
             model=MODEL,
         )
 
+    async def async_added_to_hass(self) -> None:
+        """Register the heat energy command when added to hass."""
+        await super().async_added_to_hass()
+        self.coordinator.register_command(HEAT_ENERGY_REGISTER)
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Unregister the heat energy command when removed from hass."""
+        self.coordinator.unregister_command(HEAT_ENERGY_REGISTER)
+        await super().async_will_remove_from_hass()
+
     @property
     def available(self) -> bool:
         """Return if entity is available."""
         if self.coordinator.data:
-            data = self.coordinator.data.get(60)  # Heat Energy register
+            data = self.coordinator.data.get(HEAT_ENERGY_REGISTER)
             return data is not None and data.get("value") is not None
         return False
 
@@ -333,7 +353,7 @@ class KamstrupGasSensor(CoordinatorEntity[KamstrupCoordinator], SensorEntity):
         """Return gas equivalent of heat energy."""
         if not self.coordinator.data:
             return None
-        data = self.coordinator.data.get(60)
+        data = self.coordinator.data.get(HEAT_ENERGY_REGISTER)
         if not data:
             return None
         return data.get("value")

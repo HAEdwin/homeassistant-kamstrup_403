@@ -1,9 +1,8 @@
 """Kamstrup 403 integration for Home Assistant."""
 
-import logging
 from datetime import timedelta
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_PORT, CONF_SCAN_INTERVAL, CONF_TIMEOUT, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -11,9 +10,6 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from .const import DEFAULT_BAUDRATE, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT
 from .coordinator import KamstrupCoordinator
 from .kamstrup import Kamstrup
-from .sensor import ALL_REGISTERS
-
-_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR]
 
@@ -31,18 +27,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(f"Cannot connect to {port}") from err
 
     coordinator = KamstrupCoordinator(
-        hass, client, ALL_REGISTERS, timedelta(seconds=scan_interval)
+        hass, entry, client, timedelta(seconds=scan_interval)
     )
-    try:
-        await coordinator.async_config_entry_first_refresh()
-    except Exception:
-        await client.disconnect()
-        raise
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Trigger refresh after sensors have registered their commands
+    # Use async_refresh() on reload to avoid redundant error handling
+    if entry.state is ConfigEntryState.LOADED:
+        await coordinator.async_refresh()
+    else:
+        await coordinator.async_config_entry_first_refresh()
     return True
 
 

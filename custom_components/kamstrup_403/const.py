@@ -10,6 +10,9 @@ DEFAULT_BAUDRATE: Final = 1200
 DEFAULT_SCAN_INTERVAL: Final = 3600
 DEFAULT_TIMEOUT: Final = 1.0
 
+# Protocol limit for registers per request
+MULTIPLE_REGISTERS_MAX: Final = 8
+
 # KMP Protocol constants
 ESCAPES: Final = frozenset({0x06, 0x0D, 0x1B, 0x40, 0x80})
 
