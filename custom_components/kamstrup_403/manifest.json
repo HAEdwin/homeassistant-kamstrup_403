@@ -1,5 +1,5 @@
 {
-  "domain": "kamstrup_403",
+  "domain": "haedwin_kamstrup_403",
   "name": "Kamstrup 403",
   "codeowners": ["@HAEdwin"],
   "config_flow": true,
