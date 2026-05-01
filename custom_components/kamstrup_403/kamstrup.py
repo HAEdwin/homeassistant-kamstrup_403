@@ -55,15 +55,11 @@ class Kamstrup:
 
     async def _write(self, data: bytes) -> None:
         """Write to meter."""
-        if self._writer is None:
-            await self.connect()
         self._writer.write(data)
         await self._writer.drain()
 
     async def _read_byte(self) -> int | None:
         """Read single byte with timeout."""
-        if self._reader is None:
-            await self.connect()
         try:
             data = await asyncio.wait_for(self._reader.read(1), timeout=self.timeout)
             return data[0] if data else None

@@ -25,6 +25,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await client.connect()
     except Exception as err:
         raise ConfigEntryNotReady(f"Cannot connect to {port}") from err
+    finally:
+        await client.disconnect()
 
     coordinator = KamstrupCoordinator(
         hass, entry, client, timedelta(seconds=scan_interval)
@@ -46,10 +48,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        coordinator: KamstrupCoordinator = entry.runtime_data
-        await coordinator.client.disconnect()
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:

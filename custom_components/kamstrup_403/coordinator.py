@@ -70,31 +70,36 @@ class KamstrupCoordinator(DataUpdateCoordinator[dict[int, Any]]):
             for i in range(0, len(self._commands), MULTIPLE_REGISTERS_MAX)
         ]
 
-        for chunk in chunks:
-            _LOGGER.debug("Get values for %s", chunk)
-            try:
-                values = await self.client.read_registers(chunk)
-            except SerialException as err:
-                _LOGGER.warning("Device disconnected or multiple access on port?")
-                raise UpdateFailed("Serial connection error") from err
-            except Exception as err:
-                _LOGGER.warning("Error reading registers %s: %s", chunk, err)
-                raise UpdateFailed(f"Error reading registers: {err}") from err
+        try:
+            await self.client.connect()
 
-            if values is None:
-                _LOGGER.debug("No values returned for chunk %s", chunk)
-                failed_counter += len(chunk)
-                continue
+            for chunk in chunks:
+                _LOGGER.debug("Get values for %s", chunk)
+                try:
+                    values = await self.client.read_registers(chunk)
+                except SerialException as err:
+                    _LOGGER.warning("Device disconnected or multiple access on port?")
+                    raise UpdateFailed("Serial connection error") from err
+                except Exception as err:
+                    _LOGGER.warning("Error reading registers %s: %s", chunk, err)
+                    raise UpdateFailed(f"Error reading registers: {err}") from err
 
-            for reg in chunk:
-                if reg in values:
-                    value, unit = values[reg]
-                    data[reg] = {"value": value, "unit": unit}
-                    _LOGGER.debug("New value for register %s: %s %s", reg, value, unit)
-                else:
-                    _LOGGER.debug("No value for register %s", reg)
-                    data[reg] = {"value": None, "unit": None}
-                    failed_counter += 1
+                if values is None:
+                    _LOGGER.debug("No values returned for chunk %s", chunk)
+                    failed_counter += len(chunk)
+                    continue
+
+                for reg in chunk:
+                    if reg in values:
+                        value, unit = values[reg]
+                        data[reg] = {"value": value, "unit": unit}
+                        _LOGGER.debug("New value for register %s: %s %s", reg, value, unit)
+                    else:
+                        _LOGGER.debug("No value for register %s", reg)
+                        data[reg] = {"value": None, "unit": None}
+                        failed_counter += 1
+        finally:
+            await self.client.disconnect()
 
         if failed_counter == len(self._commands):
             _LOGGER.error("No readings from meter - check IR connection")
