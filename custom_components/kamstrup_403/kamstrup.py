@@ -127,16 +127,23 @@ class Kamstrup:
         return value * exp, unit
 
     async def read_registers(
-        self, registers: list[int]
+        self, registers: list[int], retries: int = 2
     ) -> dict[int, tuple[float | None, str | None]]:
         """Read multiple registers (max 8 at a time)."""
         registers = registers[:8]
         req = [0x3F, 0x10, len(registers)]
         for r in registers:
             req.extend([r >> 8, r & 0xFF])
-        await self._send(tuple(req))
 
-        data = await self._receive()
+        data = None
+        for attempt in range(retries + 1):
+            await self._send(tuple(req))
+            data = await self._receive()
+            if data is not None and len(data) >= 3 and data[0] == 0x3F and data[1] == 0x10:
+                break
+            if attempt < retries:
+                _LOGGER.debug("Retrying read_registers (attempt %d of %d)", attempt + 1, retries)
+
         if data is None or len(data) < 3 or data[0] != 0x3F or data[1] != 0x10:
             return {}
 

@@ -36,6 +36,7 @@ class KamstrupCoordinator(DataUpdateCoordinator[dict[int, Any]]):
         )
         self.client = client
         self._commands: list[int] = []
+        self._consecutive_failures: int = 0
 
     def register_command(self, command: int) -> None:
         """Add a command/register to be polled."""
@@ -102,14 +103,25 @@ class KamstrupCoordinator(DataUpdateCoordinator[dict[int, Any]]):
             await self.client.disconnect()
 
         if failed_counter == len(self._commands):
-            _LOGGER.error("No readings from meter - check IR connection")
-            persistent_notification.async_create(
-                self.hass,
-                "No readings from the Kamstrup meter. Please check the IR connection.",
-                title="Kamstrup 403 - Connection Failed",
-                notification_id=f"{DOMAIN}_ir_connection_failed",
+            self._consecutive_failures += 1
+            _LOGGER.warning(
+                "No readings from meter (consecutive failure %d) - check IR connection",
+                self._consecutive_failures,
             )
+            if self._consecutive_failures >= 3:
+                persistent_notification.async_create(
+                    self.hass,
+                    "No readings from the Kamstrup meter. Please check the IR connection.",
+                    title="Kamstrup 403 - Connection Failed",
+                    notification_id=f"{DOMAIN}_ir_connection_failed",
+                )
+                raise UpdateFailed("No readings from meter - check IR connection")
+            # Transient failure: preserve last known good data so entities stay available
+            if self.data:
+                _LOGGER.debug("Preserving previous data due to transient read failure")
+                return self.data
         else:
+            self._consecutive_failures = 0
             _LOGGER.debug(
                 "Finished update, %s out of %s readings failed",
                 failed_counter,
