@@ -4,7 +4,7 @@ import asyncio
 import logging
 import math
 
-import serial_asyncio_fast as serial_asyncio
+import serialx.asyncio as serial_asyncio
 
 from .const import ESCAPES, UNITS
 

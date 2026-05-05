@@ -1,5 +1,5 @@
 {
-  "domain": "haedwin_kamstrup_403",
+  "domain": "kamstrup_403",
   "name": "Kamstrup 403",
   "codeowners": ["@HAEdwin"],
   "config_flow": true,
@@ -7,6 +7,6 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/HAEdwin/homeassistant-kamstrup_403/issues",
   "loggers": ["custom_components.kamstrup_403"],
-  "requirements": ["pyserial-asyncio-fast==0.16"],
-  "version": "1.2.2"
+  "requirements": ["serialx"],
+  "version": "1.3.2"
 }

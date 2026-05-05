@@ -8,7 +8,6 @@ from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from serial import SerialException
 
 from .const import DOMAIN, MULTIPLE_REGISTERS_MAX
 from .kamstrup import Kamstrup
@@ -78,7 +77,7 @@ class KamstrupCoordinator(DataUpdateCoordinator[dict[int, Any]]):
                 _LOGGER.debug("Get values for %s", chunk)
                 try:
                     values = await self.client.read_registers(chunk)
-                except SerialException as err:
+                except OSError as err:
                     _LOGGER.warning("Device disconnected or multiple access on port?")
                     raise UpdateFailed("Serial connection error") from err
                 except Exception as err:
